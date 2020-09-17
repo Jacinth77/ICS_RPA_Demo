@@ -1,6 +1,7 @@
 package com.novayre.jidoka.robot.test;
 
-import com.novayre.jidoka.client.api.queue.IQueueManager;
+import com.novayre.jidoka.client.api.exceptions.JidokaQueueException;
+import com.novayre.jidoka.client.api.queue.*;
 import com.novayre.jidoka.data.provider.api.IExcel;
 import com.novayre.jidoka.data.provider.api.IJidokaDataProvider;
 import com.novayre.jidoka.data.provider.api.IJidokaExcelDataProvider;
@@ -13,6 +14,12 @@ import com.novayre.jidoka.client.api.IRobot;
 import com.novayre.jidoka.client.api.JidokaFactory;
 import com.novayre.jidoka.client.api.annotations.Robot;
 import com.novayre.jidoka.client.api.multios.IClient;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Browser robot template. 
@@ -41,11 +48,22 @@ public class RobotBrowserTemplate implements IRobot {
 
 	private ExcelDSRow excelDSRow;
 
-	private IJidokaExcelDataProvider<ExcelDSRow> dataProvider;
+	private IJidokaExcelDataProvider<Excel_Input> dataProvider;
 
 	private IExcel excel;
 
 	private IQueueManager qmanager;
+
+	private String selectedQueueID;
+
+	private IQueue currentQueue;
+
+	private Excel_Input currentItem;
+
+	private static final int FIRST_ROW = 0;
+
+	private IQueueItem currentItemQueue;
+	private int currentItemIndex;
 
 	/**
 	 * Action "startUp".
@@ -137,6 +155,105 @@ public class RobotBrowserTemplate implements IRobot {
 		server.sendScreen("Screen after load page: " + HOME_URL);
 		
 		server.setCurrentItemResultToOK("Success");
+	}
+
+
+
+	public void SelectQueue() throws Exception {
+
+		if (StringUtils.isNotBlank(qmanager.preselectedQueue())) {
+
+			selectedQueueID = qmanager.preselectedQueue();
+			server.info("Selected queue ID: " + selectedQueueID);
+			currentQueue = queueCommons.getQueueFromId(selectedQueueID);
+		} else {
+
+			String inputFilePath=server.getEnvironmentVariables().get("InputFilePath").toString();
+			selectedQueueID = queueCommons.createQueue(inputFilePath);
+			server.info("Queue ID: " + selectedQueueID);
+			addItemsToQueue();
+
+
+			currentQueue = queueCommons.getQueueFromId(selectedQueueID);
+
+		}
+	}
+
+	private void addItemsToQueue() throws Exception {
+
+
+		String inputFilePath=server.getEnvironmentVariables().get("InputFilePath").toString();
+		Path inputFile = Paths.get(server.getCurrentDir(), inputFilePath);
+
+
+		dataProvider = IJidokaDataProvider.getInstance(this, IJidokaDataProvider.Provider.EXCEL);
+		dataProvider.init(String.valueOf(inputFile), null, FIRST_ROW, new Excel_Input_RowMapper());
+
+		try {
+
+			// Get the next row, each row is a item
+			while (dataProvider.nextRow()) {
+
+				CreateItemParameters itemParameters = new CreateItemParameters();
+				Excel_Input  excelinput = dataProvider.getCurrentItem();
+
+				// Set the item parameters
+				itemParameters.setKey(excelinput.getInput_ID());
+				itemParameters.setPriority(EPriority.NORMAL);
+				itemParameters.setQueueId(selectedQueueID);
+				itemParameters.setReference(String.valueOf(dataProvider.getCurrentItemNumber()));
+
+				Map<String, String> functionalData = new HashMap<>();
+				functionalData.put(Excel_Input_RowMapper.Input_ID,excelinput.getInput_ID());
+				functionalData.put(Excel_Input_RowMapper.Status, excelinput.getStatus());
+
+				itemParameters.setFunctionalData(functionalData);
+
+				qmanager.createItem(itemParameters);
+
+				server.debug(String.format("Added item to queue %s with id %s", itemParameters.getQueueId(),
+						itemParameters.getKey()));
+			}
+
+		} catch (Exception e) {
+			throw new JidokaQueueException(e);
+		} finally {
+
+			try {
+				// Close the excel file
+				dataProvider.close();
+			} catch (IOException e) {
+				throw new JidokaQueueException(e);
+			}
+		}
+	}
+
+	public String hasMoreItems() throws Exception {
+
+		// retrieve the next item in the queue
+		//QueueCommons queueCommons = new QueueCommons();
+		currentItemQueue = queueCommons.getNextItem(currentQueue);
+
+		if (currentItemQueue != null) {
+
+			// set the stats for the current item
+			server.setCurrentItem(currentItemIndex++, currentItemQueue.key());
+
+			return "Yes";
+		}
+
+		return "No";
+	}
+
+	public void releaseitems() throws IOException, JidokaQueueException {
+
+		Map<String, String> funcData = currentItemQueue.functionalData();
+		funcData.put(Excel_Input_RowMapper.Status,"Success");
+
+		ReleaseItemWithOptionalParameters rip = new ReleaseItemWithOptionalParameters();
+		rip.functionalData(funcData);
+		qmanager.releaseItem(rip);
+
 	}
 
 	/**
