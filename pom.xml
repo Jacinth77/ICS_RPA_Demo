@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.novayre.jidoka.robot.test</groupId>
+	<artifactId>ICS_RPA_Demo</artifactId>
+	<packaging>jar</packaging>
+	<version>0.0.1</version>
+
+	<name>browser</name>
+
+	<parent>
+		<groupId>com.novayre.jidoka.robot</groupId>
+		<artifactId>jidoka-robot-parent</artifactId>
+		<version>7.1.0</version> <!-- VC -->
+	</parent>
+
+	<profiles>
+		<profile>
+			<id>jidoka-repo</id>
+
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+
+			<repositories>
+				<repository>
+					<id>jidoka</id>
+					<url>https://icscards-dev.appiancloud.com/rpa-repo/repository/jidoka/</url>
+					<releases>
+					</releases>
+					<snapshots>
+					</snapshots>
+				</repository>
+			</repositories>
+
+			<pluginRepositories>
+				<pluginRepository>
+					<id>jidoka</id>
+					<url>https://icscards-dev.appiancloud.com/rpa-repo/repository/jidoka/</url>
+					<releases>
+					</releases>
+					<snapshots>
+					</snapshots>
+				</pluginRepository>
+			</pluginRepositories>
+			<distributionManagement>
+				<repository>
+					<id>jidoka</id>
+					<url>https://icscards-dev.appiancloud.com/rpa-repo/repository/jidoka/</url>
+					<layout>default</layout>
+				</repository>
+			</distributionManagement>
+		</profile>
+
+	</profiles>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.novayre.jidoka.module</groupId>
+			<artifactId>jidoka-browser-api</artifactId>
+			<version>${jidoka.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.novayre.jidoka.module</groupId>
+			<artifactId>jidoka-data-provider-api</artifactId>
+			<version>7.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+		</dependency>
+
+	</dependencies>
+</project>
