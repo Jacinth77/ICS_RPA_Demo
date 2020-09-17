@@ -65,6 +65,10 @@ public class RobotBrowserTemplate implements IRobot {
 	private IQueueItem currentItemQueue;
 	private int currentItemIndex;
 
+	private ICS_WebApplication webApplication;
+
+	private String returnType ="No";
+
 	/**
 	 * Action "startUp".
 	 * <p>
@@ -89,6 +93,7 @@ public class RobotBrowserTemplate implements IRobot {
 	public boolean start() throws Exception {
 		qmanager = server.getQueueManager();
 		queueCommons = new QueueCommons();
+		webApplication =new ICS_WebApplication();
 		excelDSRow = new ExcelDSRow();
 		queueCommons.init(qmanager);
 		dataProvider = IJidokaDataProvider.getInstance(this, IJidokaDataProvider.Provider.EXCEL);
@@ -104,57 +109,41 @@ public class RobotBrowserTemplate implements IRobot {
 	}
 
 
-
-	/**
-	 * Open Web Browser
-	 * @throws Exception
-	 */
-	public void openBrowser() throws Exception  {
-
-		browserType = server.getParameters().get("Browser");
-		
-		// Select browser type
-		if (StringUtils.isBlank(browserType)) {
-			server.info("Browser parameter not present. Using the default browser CHROME");
-			browser.setBrowserType(EBrowsers.CHROME);
-			browserType = EBrowsers.CHROME.name();
-		} else {
-			EBrowsers selectedBrowser = EBrowsers.valueOf(browserType);
-			browserType = selectedBrowser.name();
-			browser.setBrowserType(selectedBrowser);
-			server.info("Browser selected: " + selectedBrowser.name());
-		}
-		
-		// Set timeout to 60 seconds
-		browser.setTimeoutSeconds(60);
-
-		// Init the browser module
-		browser.initBrowser();
-
-		//This command is uses to make visible in the desktop the page (IExplore issue)
-		if (EBrowsers.INTERNET_EXPLORER.name().equals(browserType)) {
-			client.clickOnCenter();
-			client.pause(3000);
-		}
-
-	}
-
-	/**
+/**
 	 * Navigate to Web Page
 	 * 
 	 * @throws Exception
 	 */
-	public void navigateToWeb() throws Exception  {
-		
-		server.setCurrentItem(1, HOME_URL);
-		
-		// Navegate to HOME_URL address
-		browser.navigate(HOME_URL);
+	public void navigateToCustomerWeb() throws Exception  {
+		//Set File Name for Customer Xpath
+		String cXpathFileName = server.getEnvironmentVariables().get("customerXpathFileName").toString();
+		webApplication.PerformOperation(cXpathFileName);
 
-		// we save the screenshot, it can be viewed in robot execution trace page on the console
-		server.sendScreen("Screen after load page: " + HOME_URL);
-		
-		server.setCurrentItemResultToOK("Success");
+	}
+	public void navigateToGoogleWeb() throws Exception  {
+		//Set File Name for Google Xpath
+		String gXpathFileName = server.getEnvironmentVariables().get("GoogleXpathFileName").toString();
+		webApplication.PerformOperation(gXpathFileName);
+
+	}
+	public void customerRetry() throws Exception{
+		returnType = webApplication.RetryRequired();
+	if (returnType.contains("Yes")){
+		navigateToCustomerWeb();
+	}
+	else if(returnType.contains("No")){
+		customerEnd();
+	}
+
+	}
+	public void googleRetry() throws Exception{
+		returnType = webApplication.RetryRequired();
+		if (returnType.contains("Yes")){
+			navigateToCustomerWeb();
+		}
+		else{
+			googleEnd();
+		}
 	}
 
 
@@ -317,7 +306,13 @@ public class RobotBrowserTemplate implements IRobot {
 	 * Last action of the robot.
 	 */
 	public void end()  {
-		server.info("End process");
+		server.info("End of Process");
+	}
+	public void customerEnd()  {
+		server.info("End of Customer Web");
+	}
+	public void googleEnd()  {
+		server.info("End of Google Doc Web");
 	}
 	
 }
