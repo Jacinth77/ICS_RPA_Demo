@@ -91,6 +91,7 @@ public class ICS_WebApplication implements IRobot
     private String documentId = null;
     private boolean IfFlag = true;
     private boolean CancelFlag= false;
+    private boolean elementFlag =false;
     public  Dictionary<String, String> dict = new Hashtable<String, String>();
 
 
@@ -274,10 +275,10 @@ public class ICS_WebApplication implements IRobot
     }
 
 
-    public void PerformOperation() throws Exception {
+    public void PerformOperation(String excelName) throws Exception {
 
         server.info("add items ");
-        String fileNameInput = server.getParameters().get("regionDatasource");
+        String fileNameInput = server.getParameters().get("excelName");
         server.info(fileNameInput);
         Path inputFile = Paths.get(server.getCurrentDir(), fileNameInput);
         String fileType = FilenameUtils.getExtension(inputFile.toString());
@@ -339,6 +340,9 @@ public class ICS_WebApplication implements IRobot
                     }
                     else if (exr.getActions().contains("IfNotEqual")) {
                         ifNotEqual(exr.getValue().trim());
+                    }
+                    else if(exr.getActions().contains("checkElement")){
+                        checkElement(exr.getXpath().trim());
                     }
                 }
 
@@ -416,22 +420,11 @@ public class ICS_WebApplication implements IRobot
      * Method returns true if there are data present in sheets
      */
 
-    public String HasMoreSheets() {
-        server.info("Inside HasSheet Method");
-        int sheetCount =dataProvider.getExcel().getWorkbook().getNumberOfSheets();
-        server.info("sheetCount" + sheetCount);
-        if(CurrentSheetCount<sheetCount){
-            CurrentSheetCount=CurrentSheetCount+1;
-
+    public void reset() {
             RetryCount = 1;
-            documentId = null;
             CancelFlag= false;
             maxCountReached ="";
 
-            return "yes";
-
-        }
-        return "no";
     }
 
 
@@ -439,7 +432,7 @@ public class ICS_WebApplication implements IRobot
      * Method for If conditions
      */
 
-    public void ifEqual(String condition) {
+        public void ifEqual(String condition) {
 
         String[] arrOfStr = condition.split(",");
         String Value1 = arrOfStr[0];
@@ -561,6 +554,17 @@ public class ICS_WebApplication implements IRobot
         if (Integer.parseInt(Value1) <= Integer.parseInt(Value2))
         {
             IfFlag = false;
+        }
+
+    }
+    public void checkElement(String checkElementValue){
+        boolean resultFound = browser.existsElement(By.xpath(checkElementValue));
+        if (resultFound) {
+            IfFlag =true;
+        }
+        else{
+
+            IfFlag =false;
         }
 
     }
