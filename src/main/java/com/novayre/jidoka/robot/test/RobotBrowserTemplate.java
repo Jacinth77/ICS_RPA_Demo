@@ -58,6 +58,7 @@ public class RobotBrowserTemplate implements IRobot {
 
 	private IQueue currentQueue;
 
+	private Excel_Input excelinput;
 	private Excel_Input currentItem;
 
 	private static final int FIRST_ROW = 0;
@@ -90,7 +91,12 @@ public class RobotBrowserTemplate implements IRobot {
 	/**
 	 * Action "start".
 	 */
-	public boolean start() throws Exception {
+	public void start() throws Exception {
+		server = (IJidokaServer< ? >) JidokaFactory.getServer();
+
+		client = IClient.getInstance(this);
+
+		browser = IWebBrowserSupport.getInstance(this, client);
 		qmanager = server.getQueueManager();
 		queueCommons = new QueueCommons();
 		webApplication =new ICS_WebApplication();
@@ -105,10 +111,23 @@ public class RobotBrowserTemplate implements IRobot {
 		client = IClient.getInstance(this);
 
 		browser = IWebBrowserSupport.getInstance(this, client);
-		return IRobot.super.startUp();
+		//return IRobot.super.startUp();
 	}
 
-
+    public void resetvariables(){
+		server.info("Reset Variables");
+		returnType ="No";
+		webApplication.reset();
+	}
+	public String MaxCountReached(){
+		if (returnType.contains("maxCountReached")){
+			return "Yes";
+		}
+		else
+		{
+			return "No";
+		}
+	}
 /**
 	 * Navigate to Web Page
 	 * 
@@ -117,32 +136,33 @@ public class RobotBrowserTemplate implements IRobot {
 	public void navigateToCustomerWeb() throws Exception  {
 		//Set File Name for Customer Xpath
 		String cXpathFileName = server.getEnvironmentVariables().get("customerXpathFileName").toString();
-		webApplication.PerformOperation(cXpathFileName);
+		server.info("InputID "+currentItem.getInput_ID());
+		webApplication.PerformOperation(cXpathFileName,currentItem.getInput_ID());
 
 	}
 	public void navigateToGoogleWeb() throws Exception  {
 		//Set File Name for Google Xpath
 		String gXpathFileName = server.getEnvironmentVariables().get("GoogleXpathFileName").toString();
-		webApplication.PerformOperation(gXpathFileName);
+		server.info("InputID "+currentItem.getInput_ID());
+		webApplication.PerformOperation(gXpathFileName,currentItem.getInput_ID());
 
 	}
-	public void customerRetry() throws Exception{
+	public String customerRetry() throws Exception
+	{
 		returnType = webApplication.RetryRequired();
-	if (returnType.contains("Yes")){
-		navigateToCustomerWeb();
+		if (returnType.contains("Yes")) {
+			return "Yes";
+		} else  {
+			return "No";
+		}
 	}
-	else if(returnType.contains("No")){
-		customerEnd();
-	}
-
-	}
-	public void googleRetry() throws Exception{
+	public String googleRetry() throws Exception{
 		returnType = webApplication.RetryRequired();
 		if (returnType.contains("Yes")){
-			navigateToCustomerWeb();
+			return "Yes";
 		}
 		else{
-			googleEnd();
+			return "No";
 		}
 	}
 
@@ -172,19 +192,25 @@ public class RobotBrowserTemplate implements IRobot {
 
 
 		String inputFilePath=server.getEnvironmentVariables().get("InputFilePath").toString();
-		Path inputFile = Paths.get(server.getCurrentDir(), inputFilePath);
+		//Path inputFile = Paths.get(inputFilePath);
 
 
 		dataProvider = IJidokaDataProvider.getInstance(this, IJidokaDataProvider.Provider.EXCEL);
-		dataProvider.init(String.valueOf(inputFile), null, FIRST_ROW, new Excel_Input_RowMapper());
+		dataProvider.init(inputFilePath, "DataSource1", FIRST_ROW, new Excel_Input_RowMapper());
+
+		server.info(inputFilePath);
 
 		try {
 
 			// Get the next row, each row is a item
 			while (dataProvider.nextRow()) {
 
+				server.info("inside while");
+
 				CreateItemParameters itemParameters = new CreateItemParameters();
 				Excel_Input  excelinput = dataProvider.getCurrentItem();
+
+
 
 				// Set the item parameters
 				itemParameters.setKey(excelinput.getInput_ID());
@@ -225,7 +251,17 @@ public class RobotBrowserTemplate implements IRobot {
 
 		if (currentItemQueue != null) {
 
+
+
+			currentItem= new Excel_Input();
+
+			currentItem.setInput_ID(currentItemQueue.functionalData().get("Input_ID"));
+			currentItem.setInput_ID(currentItemQueue.functionalData().get("Status"));
+
+			server.info(currentItem.getInput_ID());
+
 			// set the stats for the current item
+
 			server.setCurrentItem(currentItemIndex++, currentItemQueue.key());
 
 			return "Yes";
@@ -242,6 +278,19 @@ public class RobotBrowserTemplate implements IRobot {
 		ReleaseItemWithOptionalParameters rip = new ReleaseItemWithOptionalParameters();
 		rip.functionalData(funcData);
 		qmanager.releaseItem(rip);
+
+	}
+
+	public void write_to_Excel(){
+
+	}
+	public void Move_File(){
+
+	}
+	public void closeQueue(){
+
+	}
+	public void getdata(){
 
 	}
 

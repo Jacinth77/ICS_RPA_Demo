@@ -60,6 +60,7 @@ public class ICS_WebApplication implements IRobot
     /** The IClient module. */
     private IClient client;
     private ExcelDSRow excelDSRow;
+    private String CustomerID;
     /** WebBrowser module */
     private IWebBrowserSupport browser;
     /** The current item index. */
@@ -119,7 +120,7 @@ public class ICS_WebApplication implements IRobot
     }
 
     /**
-     * Action "start".
+     * Action "start".*/
 
     public void start() {
         qmanager = server.getQueueManager();
@@ -130,7 +131,7 @@ public class ICS_WebApplication implements IRobot
         server.setNumberOfItems(1);
         excel = IExcel.getExcelInstance(this);
     }
-     */
+
 
     /**
      * Open Web Browser
@@ -275,12 +276,15 @@ public class ICS_WebApplication implements IRobot
     }
 
 
-    public void PerformOperation(String excelName) throws Exception {
+    public void PerformOperation(String excelName,String customer_ID) throws Exception {
 
+        startUp();
+        start();
         server.info("add items ");
-        String fileNameInput = server.getParameters().get("excelName");
-        server.info(fileNameInput);
-        Path inputFile = Paths.get(server.getCurrentDir(), fileNameInput);
+        CustomerID=customer_ID;
+        server.info("Customer ID"+CustomerID);
+
+        Path inputFile = Paths.get(server.getCurrentDir(), excelName);
         String fileType = FilenameUtils.getExtension(inputFile.toString());
         String sourceDir =inputFile.toString();
         excelFile = sourceDir;
@@ -792,13 +796,11 @@ public class ICS_WebApplication implements IRobot
 
 
 
-        if  (Value.toLowerCase().trim().contains("customercountry")
-                ||  Value.toLowerCase().trim().contains("customername")
-                ||  Value.toLowerCase().trim().contains("customerpassport"))
+        if  (Value.toLowerCase().trim().contains("queueparameter"))
 
         {
-            server.info("Inside");
-            Value=server.getParameters().get(Value).toString();
+
+            Value=CustomerID;
             server.info(Value);
         }
 
@@ -806,6 +808,8 @@ public class ICS_WebApplication implements IRobot
         {
             Value = dict.get(Value);
         }
+
+
 
 
         browser.waitElement(By.xpath(Path),10);

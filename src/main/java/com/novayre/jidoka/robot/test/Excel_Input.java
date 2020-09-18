@@ -22,16 +22,16 @@ public class Excel_Input implements Serializable {
         return Input_ID;
     }
 
-    public void setField_Name(String field_Name) {
-        Input_ID = Input_ID;
+    public void setInput_ID(String input_id) {
+        Input_ID = input_id;
     }
 
     public String getStatus() {
         return Status;
     }
 
-    public void setXpath(String xpath) {
-        Status = Status;
+    public void setStatus(String status) {
+        Status = status;
     }
 
 }

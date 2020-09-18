@@ -26,14 +26,14 @@ public class Excel_Input_RowMapper implements IRowMapper<IExcel, Excel_Input> {
     /**
      * Column with the result title
      */
-    private static final int Value_col = 2;
 
 
     @Override
     public Excel_Input map(IExcel data, int rowNum) {
         Excel_Input excel = new Excel_Input();
-        excel.setField_Name(data.getCellValueAsString(rowNum, Input_ID_col));
-        excel.setXpath(data.getCellValueAsString(rowNum, Status_col));
+        excel.setInput_ID(data.getCellValueAsString(rowNum, Input_ID_col));
+        excel.setStatus(data.getCellValueAsString(rowNum, Status_col));
+
 
 
         return isLastRow(excel) ? null : excel;
