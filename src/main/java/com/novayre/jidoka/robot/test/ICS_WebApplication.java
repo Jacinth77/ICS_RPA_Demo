@@ -194,7 +194,6 @@ public class ICS_WebApplication implements IRobot
  */
 
 
-
     /**
      * Close the browser.
      */
@@ -348,7 +347,7 @@ public class ICS_WebApplication implements IRobot
                     else if(exr.getActions().contains("checkElement")){
                         checkElement(exr.getXpath().trim());
                     }
-                }
+                                    }
 
 
 

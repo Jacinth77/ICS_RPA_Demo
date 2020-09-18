@@ -1,10 +1,12 @@
 package com.novayre.jidoka.robot.test;
 
+import com.novayre.jidoka.client.api.IJidokaRobot;
 import com.novayre.jidoka.client.api.exceptions.JidokaQueueException;
 import com.novayre.jidoka.client.api.queue.*;
 import com.novayre.jidoka.data.provider.api.IExcel;
 import com.novayre.jidoka.data.provider.api.IJidokaDataProvider;
 import com.novayre.jidoka.data.provider.api.IJidokaExcelDataProvider;
+import com.novayre.jidoka.windows.api.IWindows;
 import org.apache.commons.lang.StringUtils;
 
 import com.novayre.jidoka.browser.api.EBrowsers;
@@ -15,11 +17,16 @@ import com.novayre.jidoka.client.api.JidokaFactory;
 import com.novayre.jidoka.client.api.annotations.Robot;
 import com.novayre.jidoka.client.api.multios.IClient;
 
+import java.awt.*;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Browser robot template. 
@@ -68,6 +75,8 @@ public class RobotBrowserTemplate implements IRobot {
 
 	private ICS_WebApplication webApplication;
 
+	private IWindows windows;
+
 	private String returnType ="No";
 
 	/**
@@ -83,7 +92,7 @@ public class RobotBrowserTemplate implements IRobot {
 		client = IClient.getInstance(this);
 		
 		browser = IWebBrowserSupport.getInstance(this, client);
-
+		windows = IJidokaRobot.getInstance(this);
 		return IRobot.super.startUp();
 
 	}
@@ -281,10 +290,45 @@ public class RobotBrowserTemplate implements IRobot {
 		qmanager.releaseItem(rip);
 
 	}
+	public void writeToExcel() throws Exception{
 
-	public void write_to_Excel(){
+		String excelPath = Paths.get(server.getCurrentDir(),"FinalTemplate.xlsx").toString();
+		try(IExcel excelIns = IExcel.getExcelInstance(this)) {
+			server.info("Excel Path"+excelPath);
+			excelIns.init(excelPath);
+			server.info("EmpValue"+webApplication.dict.get("Emp"));
+			server.info("NameValue"+webApplication.dict.get("Name"));
+			excelIns.setCellValueByName("I5", LocalDate.now().toString());
+			excelIns.setCellValueByName("G10", webApplication.dict.get("Emp"));
+			excelIns.setCellValueByName("G12", webApplication.dict.get("Name"));
+			excelIns.setCellValueByName("G14", webApplication.dict.get("Designation"));
+			excelIns.setCellValueByName("G16", webApplication.dict.get("Email id"));
+			excelIns.setCellValueByName("G18", webApplication.dict.get("Mobile"));
+			excelIns.setCellValueByName("G20", webApplication.dict.get("Project Code"));
+			excelIns.setCellValueByName("G22", webApplication.dict.get("Practice Unit"));
+			excelIns.setCellValueByName("G24", webApplication.dict.get("Current Location"));
+			excelIns.setCellValueByName("G26", webApplication.dict.get("Current City"));
+			excelIns.setCellValueByName("G28", "EN1234");
+			server.info("End of Write");
+			excelIns.close();
 
+			Desktop.getDesktop().open(Paths.get(server.getCurrentDir(), "FinalTemplate.xlsx").toFile());
+			TimeUnit.SECONDS.sleep(8);
+			client.typeText(client.getKeyboardSequence().pressAlt().type("f").releaseAlt());
+			TimeUnit.SECONDS.sleep(3);
+			client.typeText(client.getKeyboardSequence().type("e"));
+			TimeUnit.SECONDS.sleep(3);
+			client.typeText(client.getKeyboardSequence().type("a"));
+			TimeUnit.SECONDS.sleep(3);
+			client.typeText(client.getKeyboardSequence().type(webApplication.dict.get("Emp") +" - " + webApplication.dict.get("Name")));
+			windows.keyboard().enter();
+			TimeUnit.SECONDS.sleep(3);
+			Runtime.getRuntime().exec("taskkill /F /IM EXCEL.exe");
+			} catch(Exception e) {
+			server.info(e);
+		}
 	}
+
 	public void Move_File(){
 
 	}
@@ -350,6 +394,7 @@ public class RobotBrowserTemplate implements IRobot {
 		}
 
 	}
+
 
 
 	/**
