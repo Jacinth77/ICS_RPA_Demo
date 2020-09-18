@@ -59,7 +59,7 @@ public class RobotBrowserTemplate implements IRobot {
 	private IQueue currentQueue;
 
 	private Excel_Input excelinput;
-	private Excel_Input currentItem;
+	//private Excel_Input currentItem;
 
 	private static final int FIRST_ROW = 0;
 
@@ -107,6 +107,7 @@ public class RobotBrowserTemplate implements IRobot {
 		excel = IExcel.getExcelInstance(this);
 		server.setNumberOfItems(1);
 		server = (IJidokaServer< ? >) JidokaFactory.getServer();
+		//excelinput= new Excel_Input();
 
 		client = IClient.getInstance(this);
 
@@ -136,15 +137,15 @@ public class RobotBrowserTemplate implements IRobot {
 	public void navigateToCustomerWeb() throws Exception  {
 		//Set File Name for Customer Xpath
 		String cXpathFileName = server.getEnvironmentVariables().get("customerXpathFileName").toString();
-		server.info("InputID "+currentItem.getInput_ID());
-		webApplication.PerformOperation(cXpathFileName,currentItem.getInput_ID());
+		server.info("InputID "+excelinput.getInput_ID());
+		webApplication.PerformOperation(cXpathFileName,excelinput.getInput_ID());
 
 	}
 	public void navigateToGoogleWeb() throws Exception  {
 		//Set File Name for Google Xpath
 		String gXpathFileName = server.getEnvironmentVariables().get("GoogleXpathFileName").toString();
-		server.info("InputID "+currentItem.getInput_ID());
-		webApplication.PerformOperation(gXpathFileName,currentItem.getInput_ID());
+		server.info("InputID "+excelinput.getInput_ID());
+		webApplication.PerformOperation(gXpathFileName,excelinput.getInput_ID());
 
 	}
 	public String customerRetry() throws Exception
@@ -252,13 +253,13 @@ public class RobotBrowserTemplate implements IRobot {
 		if (currentItemQueue != null) {
 
 
+            server.info("current item key"+currentItemQueue.functionalData().get("Input_ID"));
+			excelinput= new Excel_Input();
 
-			currentItem= new Excel_Input();
+			excelinput.setInput_ID(currentItemQueue.functionalData().get("Input_ID"));
+			excelinput.setStatus(currentItemQueue.functionalData().get("Status"));
 
-			currentItem.setInput_ID(currentItemQueue.functionalData().get("Input_ID"));
-			currentItem.setInput_ID(currentItemQueue.functionalData().get("Status"));
-
-			server.info(currentItem.getInput_ID());
+			server.info("ggggggg"+excelinput.getInput_ID());
 
 			// set the stats for the current item
 
