@@ -11,6 +11,7 @@ import com.novayre.jidoka.client.api.appian.IAppian;
 import com.novayre.jidoka.client.api.appian.webapi.IWebApiRequest;
 import com.novayre.jidoka.client.api.appian.webapi.IWebApiRequestBuilderFactory;
 import com.novayre.jidoka.client.api.exceptions.JidokaQueueException;
+import com.novayre.jidoka.client.api.execution.IUsernamePassword;
 import com.novayre.jidoka.client.api.multios.IClient;
 import com.novayre.jidoka.client.api.queue.IQueue;
 import com.novayre.jidoka.client.api.queue.IQueueItem;
@@ -428,6 +429,11 @@ public class ICS_WebApplication implements IRobot
             CancelFlag= false;
             maxCountReached ="";
 
+
+    }
+
+    public void resetDictionary(){
+        Dictionary<String, String> dict = new Hashtable<String, String>();
     }
 
 
@@ -628,7 +634,7 @@ public class ICS_WebApplication implements IRobot
             if (RetryCount < 3)
             {
                 RetryCount = RetryCount + 1;
-                return "yes";
+                return "Yes";
 
             }
             else
@@ -727,8 +733,8 @@ public class ICS_WebApplication implements IRobot
 
         if (Path.contains("XXINPUTXX"))
         {
-            String ReplacePath = server.getParameters().get(Value).toString();
-            Path.replace("XXINPUTXX",ReplacePath);
+
+             Path.replace("XXINPUTXX",CustomerID);
         }
 
         if (Path.contains("XXRead"))
@@ -791,6 +797,16 @@ public class ICS_WebApplication implements IRobot
         {
             String ReplaceValue = dict.get(Value);
             Path.replace("XXRead",ReplaceValue);
+        }
+        if (Value.contains("USERNAME"))
+        {
+            IUsernamePassword appianCredentials = server.getCredentials("GoogleDocs").get(0);
+            Value=appianCredentials.getUsername();
+        }
+        if (Value.contains("PASSWORD"))
+        {
+            IUsernamePassword appianCredentials = server.getCredentials("GoogleDocs").get(0);
+            Value=appianCredentials.getPassword();
         }
 
 

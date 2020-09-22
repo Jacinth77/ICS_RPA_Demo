@@ -3,6 +3,7 @@ package com.novayre.jidoka.robot.test;
 import com.novayre.jidoka.client.api.IJidokaRobot;
 import com.novayre.jidoka.client.api.exceptions.JidokaQueueException;
 import com.novayre.jidoka.client.api.queue.*;
+import com.novayre.jidoka.client.lowcode.IRobotVariable;
 import com.novayre.jidoka.data.provider.api.IExcel;
 import com.novayre.jidoka.data.provider.api.IJidokaDataProvider;
 import com.novayre.jidoka.data.provider.api.IJidokaExcelDataProvider;
@@ -16,6 +17,9 @@ import com.novayre.jidoka.client.api.IRobot;
 import com.novayre.jidoka.client.api.JidokaFactory;
 import com.novayre.jidoka.client.api.annotations.Robot;
 import com.novayre.jidoka.client.api.multios.IClient;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
+import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
 
 import java.awt.*;
 import java.io.File;
@@ -27,6 +31,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
 
 /**
  * Browser robot template. 
@@ -79,6 +84,12 @@ public class RobotBrowserTemplate implements IRobot {
 
 	private String returnType ="No";
 
+	private String OutputFilepath;
+
+	private Integer cellNumber = 2;
+
+	private String Status = "Success";
+
 	/**
 	 * Action "startUp".
 	 * <p>
@@ -130,7 +141,8 @@ public class RobotBrowserTemplate implements IRobot {
 		webApplication.reset();
 	}
 	public String MaxCountReached(){
-		if (returnType.contains("maxCountReached")){
+		if (returnType.contains("MaxCountReached")){
+			Status = "Failed";
 			return "Yes";
 		}
 		else
@@ -184,15 +196,14 @@ public class RobotBrowserTemplate implements IRobot {
 
 			selectedQueueID = qmanager.preselectedQueue();
 			server.info("Selected queue ID: " + selectedQueueID);
+			addItemsToQueue();
 			currentQueue = queueCommons.getQueueFromId(selectedQueueID);
 		} else {
 
-			String inputFilePath=server.getEnvironmentVariables().get("InputFilePath").toString();
+			String inputFilePath=server.getEnvironmentVariables().get("InputFilePath").toString().replace("*","\\");
 			selectedQueueID = queueCommons.createQueue(inputFilePath);
 			server.info("Queue ID: " + selectedQueueID);
 			addItemsToQueue();
-
-
 			currentQueue = queueCommons.getQueueFromId(selectedQueueID);
 
 		}
@@ -201,7 +212,7 @@ public class RobotBrowserTemplate implements IRobot {
 	private void addItemsToQueue() throws Exception {
 
 
-		String inputFilePath=server.getEnvironmentVariables().get("InputFilePath").toString();
+		String inputFilePath=server.getEnvironmentVariables().get("InputFilePath").toString().replace("*","\\");
 		//Path inputFile = Paths.get(inputFilePath);
 
 
@@ -268,11 +279,17 @@ public class RobotBrowserTemplate implements IRobot {
 			excelinput.setInput_ID(currentItemQueue.functionalData().get("Input_ID"));
 			excelinput.setStatus(currentItemQueue.functionalData().get("Status"));
 
-			server.info("ggggggg"+excelinput.getInput_ID());
+			server.info("Input Customer ID -"+excelinput.getInput_ID());
 
-			// set the stats for the current item
+			/* set the stats for the current item
+			Map<String, IRobotVariable> variables = server.getWorkflowVariables();
+			IRobotVariable AN = variables.get("EmpNo");
+			AN.setValue(excelinput.getInput_ID());*/
 
 			server.setCurrentItem(currentItemIndex++, currentItemQueue.key());
+
+			Status = "Success";
+			webApplication.resetDictionary();
 
 			return "Yes";
 		}
@@ -280,52 +297,82 @@ public class RobotBrowserTemplate implements IRobot {
 		return "No";
 	}
 
-	public void releaseitems() throws IOException, JidokaQueueException {
+	public void releaseitems() throws Exception {
 
-		Map<String, String> funcData = currentItemQueue.functionalData();
-		funcData.put(Excel_Input_RowMapper.Status,"Success");
+		if (webApplication.dict.isEmpty()){
+			Status = "Employee Not Found";
+		}
 
-		ReleaseItemWithOptionalParameters rip = new ReleaseItemWithOptionalParameters();
-		rip.functionalData(funcData);
-		qmanager.releaseItem(rip);
+			updateInputExcel(Status);
+			Map<String, String> funcData = currentItemQueue.functionalData();
+			funcData.put(Excel_Input_RowMapper.Status,Status);
+			ReleaseItemWithOptionalParameters rip = new ReleaseItemWithOptionalParameters();
+			rip.functionalData(funcData);
+			qmanager.releaseItem(rip);
 
 	}
-	public void writeToExcel() throws Exception{
 
-		String excelPath = Paths.get(server.getCurrentDir(),"FinalTemplate.xlsx").toString();
-		try(IExcel excelIns = IExcel.getExcelInstance(this)) {
-			server.info("Excel Path"+excelPath);
-			excelIns.init(excelPath);
-			server.info("EmpValue"+webApplication.dict.get("Emp"));
-			server.info("NameValue"+webApplication.dict.get("Name"));
-			excelIns.setCellValueByName("I5", LocalDate.now().toString());
-			excelIns.setCellValueByName("G10", webApplication.dict.get("Emp"));
-			excelIns.setCellValueByName("G12", webApplication.dict.get("Name"));
-			excelIns.setCellValueByName("G14", webApplication.dict.get("Designation"));
-			excelIns.setCellValueByName("G16", webApplication.dict.get("Email id"));
-			excelIns.setCellValueByName("G18", webApplication.dict.get("Mobile"));
-			excelIns.setCellValueByName("G20", webApplication.dict.get("Project Code"));
-			excelIns.setCellValueByName("G22", webApplication.dict.get("Practice Unit"));
-			excelIns.setCellValueByName("G24", webApplication.dict.get("Current Location"));
-			excelIns.setCellValueByName("G26", webApplication.dict.get("Current City"));
-			excelIns.setCellValueByName("G28", "EN1234");
-			server.info("End of Write");
-			excelIns.close();
+	public void encrptPDF() throws IOException {
 
-			Desktop.getDesktop().open(Paths.get(server.getCurrentDir(), "FinalTemplate.xlsx").toFile());
-			TimeUnit.SECONDS.sleep(8);
-			client.typeText(client.getKeyboardSequence().pressAlt().type("f").releaseAlt());
-			TimeUnit.SECONDS.sleep(3);
-			client.typeText(client.getKeyboardSequence().type("e"));
-			TimeUnit.SECONDS.sleep(3);
-			client.typeText(client.getKeyboardSequence().type("a"));
-			TimeUnit.SECONDS.sleep(3);
-			client.typeText(client.getKeyboardSequence().type(webApplication.dict.get("Emp") +" - " + webApplication.dict.get("Name")));
-			windows.keyboard().enter();
-			TimeUnit.SECONDS.sleep(3);
-			Runtime.getRuntime().exec("taskkill /F /IM EXCEL.exe");
-			} catch(Exception e) {
-			server.info(e);
+		if (webApplication.dict.isEmpty() == false){
+
+			File file = new File(OutputFilepath + ".pdf");
+			PDDocument document = PDDocument.load(file);
+			AccessPermission ap = new AccessPermission();
+			String password = "ICS" + webApplication.dict.get("Emp");
+			StandardProtectionPolicy spp = new StandardProtectionPolicy(password, password, ap);
+			spp.setEncryptionKeyLength(128);
+			spp.setPermissions(ap);
+			document.protect(spp);
+			server.info("Document encrypted");
+			document.save(OutputFilepath + ".pdf");
+			document.close();
+		}
+	}
+	public void writeToExcel() throws Exception {
+
+		server.info(webApplication.dict.isEmpty());
+		if (webApplication.dict.isEmpty() == false){
+
+			server.info("Inside WritetoExcel");
+
+			String excelPath = Paths.get(server.getCurrentDir(), "FinalTemplate.xlsx").toString();
+			try (IExcel excelIns = IExcel.getExcelInstance(this)) {
+				server.info("Excel Path" + excelPath);
+				excelIns.init(excelPath);
+				server.info("EmpValue" + webApplication.dict.get("Emp"));
+				server.info("NameValue" + webApplication.dict.get("Name"));
+				excelIns.setCellValueByName("I5", LocalDate.now().toString());
+				excelIns.setCellValueByName("G10", webApplication.dict.get("Emp"));
+				excelIns.setCellValueByName("G12", webApplication.dict.get("Name"));
+				excelIns.setCellValueByName("G14", webApplication.dict.get("Designation"));
+				excelIns.setCellValueByName("G16", webApplication.dict.get("Email id"));
+				excelIns.setCellValueByName("G18", webApplication.dict.get("Mobile"));
+				excelIns.setCellValueByName("G20", webApplication.dict.get("Project Code"));
+				excelIns.setCellValueByName("G22", webApplication.dict.get("Practice Unit"));
+				excelIns.setCellValueByName("G24", webApplication.dict.get("Current Location"));
+				excelIns.setCellValueByName("G26", webApplication.dict.get("Current City"));
+				excelIns.setCellValueByName("G28", "EN1234");
+				server.info("End of Write");
+				excelIns.close();
+
+				Desktop.getDesktop().open(Paths.get(server.getCurrentDir(), "FinalTemplate.xlsx").toFile());
+				TimeUnit.SECONDS.sleep(8);
+				client.typeText(client.getKeyboardSequence().pressAlt().type("f").releaseAlt());
+				TimeUnit.SECONDS.sleep(3);
+				client.typeText(client.getKeyboardSequence().type("e"));
+				TimeUnit.SECONDS.sleep(3);
+				client.typeText(client.getKeyboardSequence().type("a"));
+				TimeUnit.SECONDS.sleep(3);
+				OutputFilepath = server.getEnvironmentVariables().get("OutPutFilePath").toString().replace("*", "\\") + "\\" + webApplication.dict.get("Emp") + " - " + webApplication.dict.get("Name");
+				server.info("OutputFilepath  :" + OutputFilepath);
+				client.typeText(client.getKeyboardSequence().type(OutputFilepath));
+				windows.keyboard().enter();
+				TimeUnit.SECONDS.sleep(3);
+				Runtime.getRuntime().exec("taskkill /F /IM EXCEL.exe");
+			} catch (Exception e) {
+				server.info(e);
+			}
 		}
 	}
 
@@ -339,9 +386,28 @@ public class RobotBrowserTemplate implements IRobot {
 
 	}
 
-	/**
-	 * @see com.novayre.jidoka.client.api.IRobot#cleanUp()
-	 */
+	private void updateInputExcel(String Status) throws Exception {
+
+		String inputFilePath=server.getEnvironmentVariables().get("InputFilePath").toString().replace("*","\\");
+		try (IExcel excelInsup = IExcel.getExcelInstance(this)) {
+			server.info("Excel Path" + inputFilePath);
+			excelInsup.init(inputFilePath);
+			String cellName = "B" + cellNumber;
+
+			excelInsup.setCellValueByName(cellName, Status);
+			cellNumber = cellNumber + 1;
+			server.info("End of Update");
+			excelInsup.close();
+
+		} catch (Exception e) {
+			server.info(e);
+		}
+	}
+
+
+			/**
+             * @see com.novayre.jidoka.client.api.IRobot#cleanUp()
+             */
 	@Override
 	public String[] cleanUp() throws Exception {
 		
@@ -372,6 +438,7 @@ public class RobotBrowserTemplate implements IRobot {
 				switch (EBrowsers.valueOf(browserType)) {
 
 				case CHROME:
+					client.killAllProcesses("chrome.exe", 1000);
 					client.killAllProcesses("chromedriver.exe", 1000);
 					break;
 
