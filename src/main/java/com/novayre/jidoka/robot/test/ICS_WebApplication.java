@@ -630,8 +630,8 @@ public class ICS_WebApplication implements IRobot
 
         if (exceptionflag) {
             exceptionflag = false;
-
-            if (RetryCount < 3)
+int retryCount = Integer.parseInt(server.getEnvironmentVariables().get("RetryCount"));
+            if (RetryCount < retryCount)
             {
                 RetryCount = RetryCount + 1;
                 return "Yes";

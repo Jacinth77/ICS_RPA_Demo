@@ -1,6 +1,8 @@
 package com.novayre.jidoka.robot.test;
 
 import com.novayre.jidoka.client.api.IJidokaRobot;
+import com.novayre.jidoka.client.api.exceptions.JidokaFatalException;
+import com.novayre.jidoka.client.api.exceptions.JidokaItemException;
 import com.novayre.jidoka.client.api.exceptions.JidokaQueueException;
 import com.novayre.jidoka.client.api.queue.*;
 import com.novayre.jidoka.client.lowcode.IRobotVariable;
@@ -17,6 +19,7 @@ import com.novayre.jidoka.client.api.IRobot;
 import com.novayre.jidoka.client.api.JidokaFactory;
 import com.novayre.jidoka.client.api.annotations.Robot;
 import com.novayre.jidoka.client.api.multios.IClient;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
@@ -76,7 +79,7 @@ public class RobotBrowserTemplate implements IRobot {
 	private static final int FIRST_ROW = 0;
 
 	private IQueueItem currentItemQueue;
-	private int currentItemIndex;
+	private int currentItemIndex=0;
 
 	private ICS_WebApplication webApplication;
 
@@ -125,7 +128,6 @@ public class RobotBrowserTemplate implements IRobot {
 		dataProvider = IJidokaDataProvider.getInstance(this, IJidokaDataProvider.Provider.EXCEL);
 		server.setNumberOfItems(1);
 		excel = IExcel.getExcelInstance(this);
-		server.setNumberOfItems(1);
 		server = (IJidokaServer< ? >) JidokaFactory.getServer();
 		//excelinput= new Excel_Input();
 
@@ -191,22 +193,28 @@ public class RobotBrowserTemplate implements IRobot {
 
 
 	public void SelectQueue() throws Exception {
+try {
 
-		if (StringUtils.isNotBlank(qmanager.preselectedQueue())) {
+	if (StringUtils.isNotBlank(qmanager.preselectedQueue())) {
 
-			selectedQueueID = qmanager.preselectedQueue();
-			server.info("Selected queue ID: " + selectedQueueID);
-			addItemsToQueue();
-			currentQueue = queueCommons.getQueueFromId(selectedQueueID);
-		} else {
+		selectedQueueID = qmanager.preselectedQueue();
+		server.info("Selected queue ID: " + selectedQueueID);
+		addItemsToQueue();
+		currentQueue = queueCommons.getQueueFromId(selectedQueueID);
+	} else {
 
-			String inputFilePath=server.getEnvironmentVariables().get("InputFilePath").toString().replace("*","\\");
-			selectedQueueID = queueCommons.createQueue(inputFilePath);
-			server.info("Queue ID: " + selectedQueueID);
-			addItemsToQueue();
-			currentQueue = queueCommons.getQueueFromId(selectedQueueID);
+		String inputFilePath = server.getEnvironmentVariables().get("InputFilePath").toString().replace("*", "\\");
+		selectedQueueID = queueCommons.createQueue(inputFilePath);
+		server.info("Queue ID: " + selectedQueueID);
+		addItemsToQueue();
+		currentQueue = queueCommons.getQueueFromId(selectedQueueID);
 
-		}
+	}
+}
+catch (Exception e){
+	throw new JidokaQueueException("Unable to find / Create Queue" +e);
+}
+
 	}
 
 	private void addItemsToQueue() throws Exception {
@@ -244,22 +252,23 @@ public class RobotBrowserTemplate implements IRobot {
 				functionalData.put(Excel_Input_RowMapper.Status, excelinput.getStatus());
 
 				itemParameters.setFunctionalData(functionalData);
-
 				qmanager.createItem(itemParameters);
 
 				server.debug(String.format("Added item to queue %s with id %s", itemParameters.getQueueId(),
 						itemParameters.getKey()));
+
+				server.setCurrentItem(currentItemIndex,"Success");
 			}
 
 		} catch (Exception e) {
-			throw new JidokaQueueException(e);
+			throw new JidokaItemException("Error While creating items");
 		} finally {
 
 			try {
 				// Close the excel file
 				dataProvider.close();
 			} catch (IOException e) {
-				throw new JidokaQueueException(e);
+				throw new JidokaItemException("Add item to Queue- while close Excel"+e);
 			}
 		}
 	}
@@ -370,8 +379,9 @@ public class RobotBrowserTemplate implements IRobot {
 				windows.keyboard().enter();
 				TimeUnit.SECONDS.sleep(3);
 				Runtime.getRuntime().exec("taskkill /F /IM EXCEL.exe");
+				server.setCurrentItemResultToOK("Values Updated in Excel sheet");
 			} catch (Exception e) {
-				server.info(e);
+				throw new JidokaItemException("Write to Excel" + e);
 			}
 		}
 	}
@@ -467,6 +477,33 @@ public class RobotBrowserTemplate implements IRobot {
 	/**
 	 * Last action of the robot.
 	 */
+
+	public String manageException(String action, Exception exception) throws Exception {
+	// We get the message of the exception
+		String errorMessage = ExceptionUtils.getRootCause(exception).getMessage();
+		// We send a screenshot to the log so the user can see the screen in the moment
+		// of the error
+		// This is a very useful thing to do
+		server.sendScreen("Screenshot at the moment of the error");
+		server.setCurrentItemResultToWarn(exception.getCause().getLocalizedMessage());
+		// If we have a FatalException we should abort the execution.
+		if (ExceptionUtils.indexOfThrowable(exception, JidokaItemException.class) >= 0) {
+
+			server.error(StringUtils.isBlank(errorMessage) ? "Item error" : errorMessage);
+			return IRobot.super.manageException(action, exception);
+		}
+		else if(ExceptionUtils.indexOfThrowable(exception, JidokaQueueException.class) >= 0){
+			server.error(StringUtils.isBlank(errorMessage) ? "Queue error" : errorMessage);
+			return IRobot.super.manageException(action, exception);
+
+		}
+		server.warn("Unknown exception!");
+
+		// If we have any other exception we must abort the execution, we don't know
+		// what has happened
+
+		return IRobot.super.manageException(action, exception);
+	}
 	public void end()  {
 		server.info("End of Process");
 	}
