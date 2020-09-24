@@ -314,7 +314,7 @@ public class ICS_WebApplication implements IRobot
                     } else if (exr.getActions().contains("Switch tab")) {
                         NavigateTab(exr.getValue().trim());
                     } else if (exr.getActions().contains("SendKey")) {
-                        SendKeys(exr.getValue().trim());
+                        SendKeys(exr.getValue().trim(),exr.getXpath().trim());
                     } else if (exr.getActions().contains("URL")) {
                         HOME_URL = exr.getValue().trim();
                         openBrowser();
@@ -734,7 +734,8 @@ int retryCount = Integer.parseInt(server.getEnvironmentVariables().get("RetryCou
         if (Path.contains("XXINPUTXX"))
         {
 
-             Path.replace("XXINPUTXX",CustomerID);
+             Path=Path.replace("XXINPUTXX",CustomerID);
+
         }
 
         if (Path.contains("XXRead"))
@@ -755,6 +756,8 @@ int retryCount = Integer.parseInt(server.getEnvironmentVariables().get("RetryCou
         {
             Value = dict.get(Value);
         }
+
+
 
         browser.waitElement(By.xpath(Path),10);
         browser.clickOnElement(By.xpath(Path));
@@ -865,50 +868,51 @@ int retryCount = Integer.parseInt(server.getEnvironmentVariables().get("RetryCou
      * Method to send operations as keyboad strokes
      */
 
-    private void SendKeys(String Key) throws InterruptedException {
+    private void SendKeys(String Key,String Path) throws InterruptedException {
 
 
         if (Key.toLowerCase().trim().contains("copy"))
         {
-            browser.getDriver().findElement(By.cssSelector("body")).sendKeys(Keys.CONTROL + "c");
+            browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.CONTROL + "c");
         }
         if (Key.toLowerCase().trim().contains("selectall"))
         {
-            browser.getDriver().findElement(By.cssSelector("body")).sendKeys(Keys.CONTROL + "a");
+            browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.CONTROL + "a");
         }
         if (Key.toLowerCase().trim().contains("paste"))
         {
-            browser.getDriver().findElement(By.cssSelector("body")).sendKeys(Keys.CONTROL + "v");
+            browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.CONTROL + "v");
 
         }
         if (Key.toLowerCase().trim().contains("pagedown"))
         {
-            browser.getDriver().findElement(By.cssSelector("body")).sendKeys(Keys.PAGE_DOWN);
+            browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.PAGE_DOWN);
 
         }
         if (Key.toLowerCase().trim().contains("pageup"))
         {
-            browser.getDriver().findElement(By.cssSelector("body")).sendKeys(Keys.PAGE_UP);
+            browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.PAGE_UP);
 
         }
         if (Key.toLowerCase().trim().contains("home"))
         {
-            browser.getDriver().findElement(By.cssSelector("body")).sendKeys(Keys.HOME);
+            browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.HOME);
 
         }
         if (Key.toLowerCase().trim().contains("end"))
         {
-            browser.getDriver().findElement(By.cssSelector("body")).sendKeys(Keys.END);
+            browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.END);
 
         }
         if (Key.toLowerCase().trim().contains("enter"))
         {
-            browser.getDriver().findElement(By.cssSelector("body")).sendKeys(Keys.ENTER);
+            server.info("Enter");
+            browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.ENTER);
 
         }
         if (Key.toLowerCase().trim().contains("backspace"))
         {
-            browser.getDriver().findElement(By.cssSelector("body")).sendKeys(Keys.BACK_SPACE);
+            browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.BACK_SPACE);
 
         }
         if (Key.toLowerCase().trim().contains("ctrl"))
