@@ -1,6 +1,6 @@
 package com.novayre.jidoka.robot.test;
 
-import com.novayre.jidoka.client.api.IJidokaRobot;
+import com.novayre.jidoka.client.api.*;
 import com.novayre.jidoka.client.api.exceptions.JidokaFatalException;
 import com.novayre.jidoka.client.api.exceptions.JidokaItemException;
 import com.novayre.jidoka.client.api.exceptions.JidokaQueueException;
@@ -14,9 +14,6 @@ import org.apache.commons.lang.StringUtils;
 
 import com.novayre.jidoka.browser.api.EBrowsers;
 import com.novayre.jidoka.browser.api.IWebBrowserSupport;
-import com.novayre.jidoka.client.api.IJidokaServer;
-import com.novayre.jidoka.client.api.IRobot;
-import com.novayre.jidoka.client.api.JidokaFactory;
 import com.novayre.jidoka.client.api.annotations.Robot;
 import com.novayre.jidoka.client.api.multios.IClient;
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -93,6 +90,14 @@ public class RobotBrowserTemplate implements IRobot {
 
 	private String Status = "Success";
 
+	private OCR ocr;
+
+	private String documentType;
+
+	private String idNumber;
+
+	private IKeyboard keyboard;
+
 	/**
 	 * Action "startUp".
 	 * <p>
@@ -104,9 +109,10 @@ public class RobotBrowserTemplate implements IRobot {
 		server = (IJidokaServer< ? >) JidokaFactory.getServer();
 
 		client = IClient.getInstance(this);
-		
+
 		browser = IWebBrowserSupport.getInstance(this, client);
 		windows = IJidokaRobot.getInstance(this);
+
 		return IRobot.super.startUp();
 
 	}
@@ -118,9 +124,11 @@ public class RobotBrowserTemplate implements IRobot {
 		server = (IJidokaServer< ? >) JidokaFactory.getServer();
 
 		client = IClient.getInstance(this);
+		ocr = new OCR();
 
 		browser = IWebBrowserSupport.getInstance(this, client);
 		qmanager = server.getQueueManager();
+		keyboard=client.getKeyboard();
 		queueCommons = new QueueCommons();
 		webApplication =new ICS_WebApplication();
 		excelDSRow = new ExcelDSRow();
@@ -147,10 +155,16 @@ public class RobotBrowserTemplate implements IRobot {
 			Status = "Failed";
 			return "Yes";
 		}
+		else if (webApplication.dict.isEmpty()){
+			Status = "Employee Not Found";
+			return "Yes";
+		}
 		else
 		{
 			return "No";
 		}
+
+
 	}
 /**
 	 * Navigate to Web Page
@@ -162,6 +176,7 @@ public class RobotBrowserTemplate implements IRobot {
 		String cXpathFileName = server.getEnvironmentVariables().get("customerXpathFileName").toString();
 		server.info("InputID "+excelinput.getInput_ID());
 		webApplication.PerformOperation(cXpathFileName,excelinput.getInput_ID());
+		keyboard.altF(4);
 
 	}
 	public void navigateToGoogleWeb() throws Exception  {
@@ -346,7 +361,9 @@ catch (Exception e){
 			server.info("Inside WritetoExcel");
 
 			String excelPath = Paths.get(server.getCurrentDir(), "FinalTemplate.xlsx").toString();
-			try (IExcel excelIns = IExcel.getExcelInstance(this)) {
+			//try (
+			IExcel excelIns = IExcel.getExcelInstance(this);
+			//{
 				server.info("Excel Path" + excelPath);
 				excelIns.init(excelPath);
 				server.info("EmpValue" + webApplication.dict.get("Emp"));
@@ -361,7 +378,8 @@ catch (Exception e){
 				excelIns.setCellValueByName("G22", webApplication.dict.get("Practice Unit"));
 				excelIns.setCellValueByName("G24", webApplication.dict.get("Current Location"));
 				excelIns.setCellValueByName("G26", webApplication.dict.get("Current City"));
-				excelIns.setCellValueByName("G28", "EN1234");
+				excelIns.setCellValueByName("G28",documentType );
+				excelIns.setCellValueByName("G30",idNumber );
 				server.info("End of Write");
 				excelIns.close();
 
@@ -377,23 +395,28 @@ catch (Exception e){
 				server.info("OutputFilepath  :" + OutputFilepath);
 				client.typeText(client.getKeyboardSequence().type(OutputFilepath));
 				windows.keyboard().enter();
-				TimeUnit.SECONDS.sleep(3);
-				Runtime.getRuntime().exec("taskkill /F /IM EXCEL.exe");
+				TimeUnit.SECONDS.sleep(4);
+				keyboard.altF(4);
+
+				//Runtime.getRuntime().exec("taskkill /F /IM EXCEL.exe");
 				server.setCurrentItemResultToOK("Values Updated in Excel sheet");
-			} catch (Exception e) {
-				throw new JidokaItemException("Write to Excel" + e);
-			}
+
+			/*} catch (Exception e) {
+				throw new JidokaItemException("Exception at  Write to Excel" );
+			}*/
 		}
 	}
 
-	public void Move_File(){
-
-	}
 	public void closeQueue(){
 
 	}
-	public void getdata(){
+	public void GetData() throws Exception {
 
+
+		String FilePath = server.getEnvironmentVariables().get("GoogleDocsPath").toString().replace("*","\\")+excelinput.getInput_ID()+".jpg";
+		server.info("Filepath   "+FilePath);
+		documentType=ocr.searchImage(FilePath);
+		idNumber=ocr.ImgPreprocessing(FilePath);
 	}
 
 	private void updateInputExcel(String Status) throws Exception {
@@ -471,6 +494,8 @@ catch (Exception e){
 		}
 
 	}
+
+
 
 
 

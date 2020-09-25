@@ -2,10 +2,7 @@ package com.novayre.jidoka.robot.test;
 
 import com.novayre.jidoka.browser.api.EBrowsers;
 import com.novayre.jidoka.browser.api.IWebBrowserSupport;
-import com.novayre.jidoka.client.api.IJidokaServer;
-import com.novayre.jidoka.client.api.IKeyboard;
-import com.novayre.jidoka.client.api.IRobot;
-import com.novayre.jidoka.client.api.JidokaFactory;
+import com.novayre.jidoka.client.api.*;
 import com.novayre.jidoka.client.api.annotations.Robot;
 import com.novayre.jidoka.client.api.appian.IAppian;
 import com.novayre.jidoka.client.api.appian.webapi.IWebApiRequest;
@@ -94,6 +91,7 @@ public class ICS_WebApplication implements IRobot
     private boolean IfFlag = true;
     private boolean CancelFlag= false;
     private boolean elementFlag =false;
+    private IKeyboardSequence keyboardSequence;
     public  Dictionary<String, String> dict = new Hashtable<String, String>();
 
 
@@ -108,6 +106,7 @@ public class ICS_WebApplication implements IRobot
         server = (IJidokaServer< ? >) JidokaFactory.getServer();
 
         client = IClient.getInstance(this);
+        keyboardSequence= client.getKeyboardSequence();
 
         browser = IWebBrowserSupport.getInstance(this, client);
 
@@ -875,60 +874,66 @@ int retryCount = Integer.parseInt(server.getEnvironmentVariables().get("RetryCou
         {
             browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.CONTROL + "c");
         }
-        if (Key.toLowerCase().trim().contains("selectall"))
+        else if (Key.toLowerCase().trim().contains("selectall"))
         {
             browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.CONTROL + "a");
         }
-        if (Key.toLowerCase().trim().contains("paste"))
+        else if (Key.toLowerCase().trim().contains("paste"))
         {
             browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.CONTROL + "v");
 
         }
-        if (Key.toLowerCase().trim().contains("pagedown"))
+        else if (Key.toLowerCase().trim().contains("pagedown"))
         {
             browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.PAGE_DOWN);
 
         }
-        if (Key.toLowerCase().trim().contains("pageup"))
+        else if (Key.toLowerCase().trim().contains("pageup"))
         {
             browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.PAGE_UP);
 
         }
-        if (Key.toLowerCase().trim().contains("home"))
+        else if (Key.toLowerCase().trim().contains("home"))
         {
             browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.HOME);
 
         }
-        if (Key.toLowerCase().trim().contains("end"))
+        else if (Key.toLowerCase().trim().contains("end"))
         {
             browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.END);
 
         }
-        if (Key.toLowerCase().trim().contains("enter"))
+        else  if (Key.toLowerCase().trim().contains("enter"))
         {
             server.info("Enter");
             browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.ENTER);
 
         }
-        if (Key.toLowerCase().trim().contains("backspace"))
+        else if (Key.toLowerCase().trim().contains("backspace"))
         {
             browser.getDriver().findElement(By.xpath(Path)).sendKeys(Keys.BACK_SPACE);
 
         }
-        if (Key.toLowerCase().trim().contains("ctrl"))
+        else if (Key.toLowerCase().trim().contains("ctrl"))
         {
             String[] arrOfStr = Key.toLowerCase().trim().split("\\+");
             String cntrlkey = arrOfStr[1];
             client.typeText(client.getKeyboardSequence().pressControl().type(cntrlkey).releaseControl());
 
         }
-        if (Key.toLowerCase().trim().contains("alt"))
+        else if (Key.toLowerCase().trim().contains("alt"))
         {
             String[] arrOfStr = Key.toLowerCase().trim().split("\\+");
             String altkey = arrOfStr[1];
             client.typeText(client.getKeyboardSequence().pressAlt().type(altkey).releaseAlt());
 
         }
+        else{
+
+            keyboardSequence.type(Key).apply();
+            //client.typeText(client.getKeyboardSequence().type(Key));
+        }
+
 
 
 		/*client.typeText(client.getKeyboardSequence().pressControl().type("a").releaseControl());
