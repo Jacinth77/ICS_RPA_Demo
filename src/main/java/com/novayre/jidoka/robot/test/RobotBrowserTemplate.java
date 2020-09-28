@@ -184,6 +184,9 @@ public class RobotBrowserTemplate implements IRobot {
 		String gXpathFileName = server.getEnvironmentVariables().get("GoogleXpathFileName").toString();
 		server.info("InputID "+excelinput.getInput_ID());
 		webApplication.PerformOperation(gXpathFileName,excelinput.getInput_ID());
+		TimeUnit.SECONDS.sleep(5);
+		keyboard.altF(4);
+
 
 	}
 	public String customerRetry() throws Exception
@@ -379,6 +382,8 @@ catch (Exception e){
 				excelIns.setCellValueByName("G24", webApplication.dict.get("Current Location"));
 				excelIns.setCellValueByName("G26", webApplication.dict.get("Current City"));
 				excelIns.setCellValueByName("G28",documentType );
+
+				server.info("IdNumber  "+idNumber);
 				excelIns.setCellValueByName("G30",idNumber );
 				server.info("End of Write");
 				excelIns.close();

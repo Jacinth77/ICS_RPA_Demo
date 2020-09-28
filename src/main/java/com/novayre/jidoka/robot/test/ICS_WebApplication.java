@@ -567,6 +567,8 @@ public class ICS_WebApplication implements IRobot
     }
     public void checkElement(String checkElementValue){
         boolean resultFound = browser.existsElement(By.xpath(checkElementValue));
+
+        server.info(resultFound);
         if (resultFound) {
             IfFlag =true;
         }
@@ -918,6 +920,7 @@ int retryCount = Integer.parseInt(server.getEnvironmentVariables().get("RetryCou
         {
             String[] arrOfStr = Key.toLowerCase().trim().split("\\+");
             String cntrlkey = arrOfStr[1];
+            server.info(cntrlkey);
             client.typeText(client.getKeyboardSequence().pressControl().type(cntrlkey).releaseControl());
 
         }

@@ -84,7 +84,7 @@ public class OCR implements IRobot {
 
         server.info(" After Startttttt");
 
-        //Desktop.getDesktop().open(Paths.get(inputFilePath).toFile());
+        Desktop.getDesktop().open(Paths.get(inputFilePath).toFile());
 
         TimeUnit.SECONDS.sleep(5);
         //server.info("Desktop capture");
@@ -107,14 +107,14 @@ public class OCR implements IRobot {
 
         if (Permit.search().found()) {
 
-            //keyboard.altF(4);
+            keyboard.altF(4);
             server.info("inside Permit  ");
 
             type="Residence Permit";
 
         } else if (passport.search().found()){
 
-            //keyboard.altF(4);
+            keyboard.altF(4);
 
 
             server.info("inside passport  ");
@@ -123,7 +123,7 @@ public class OCR implements IRobot {
         }
         else if (DL.search().found()){
 
-            //keyboard.altF(4);
+            keyboard.altF(4);
             server.info("inside DL  ");
 
             type="Driving License";
@@ -131,7 +131,7 @@ public class OCR implements IRobot {
         }
 
         server.info("type  "+type);
-        keyboard.altF(4);
+        //keyboard.altF(4);
         return  type;
     }
 
